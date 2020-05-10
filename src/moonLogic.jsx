@@ -3,6 +3,8 @@ import MoonPresent from "./moonPresent";
 import produce from "immer";
 import {differenceInHours, max, parseISO, isAfter, isBefore} from 'date-fns';
 import {v4 as uuidv4} from 'uuid';
+// import { zonedTimeToUtc, utcToZonedTime, format } from 'date-fns-timezone';
+import {zonedTimeToUtc} from 'date-fns-timezone';
 
 class MoonLogic extends Component {
 	constructor(props) {
@@ -14,6 +16,7 @@ class MoonLogic extends Component {
 			popsAt: new Date(),
 			popDistance: 200,
 			fuckedUp: false,
+			notes: '',
 			timestamps: [
 				{
 					id: 0,
@@ -25,18 +28,13 @@ class MoonLogic extends Component {
 	}
 	
 	componentDidMount() {
-		
-		// console.log("props: ", JSON.parse(localStorage.getItem("moonList")));
-		// fetch moon data from cookie
-		// const localStorageState = JSON.parse(localStorage.getItem("moonList")).find(moon => moon.id === this.props.moonId);
-		const localStore = localStorage.getItem(this.props.moonId)
-		
-		// console.log("local: ", localStorageState)
+		const localStore = localStorage.getItem(this.props.moonId);
 		if (localStore !== null) {
 			const localStorageState = JSON.parse(localStore);
 			this.setState(produce(draft => {
 				return draft = localStorageState;
-			}), () => {});
+			}), () => {
+			});
 		}
 	}
 	
@@ -47,7 +45,7 @@ class MoonLogic extends Component {
 	validateTimestamps = (timestamps) => {
 		let fuckedUp = false;
 		let sortedTimestamps = [];
-		console.log("timestamps: " , timestamps)
+		
 		function compare(a, b) {
 			if (a.distanceToPop < b.distanceToPop) {
 				return -1;
@@ -67,7 +65,7 @@ class MoonLogic extends Component {
 		})].sort(compare);
 		
 		for (let i = 0; i < sortedTimestamps.length - 1; i++) {
-			console.log("sort: ", sortedTimestamps[i+1], i+1)
+			console.log("sort: ", sortedTimestamps[i + 1], i + 1)
 			console.log("isAfter: ", isAfter(sortedTimestamps[i].time, sortedTimestamps[i + 1].time), sortedTimestamps[i].time, sortedTimestamps[i + 1].time);
 			console.log("isBefore: ", isBefore(sortedTimestamps[i].time, sortedTimestamps[i + 1].time), sortedTimestamps[i].time, sortedTimestamps[i + 1].time)
 			if (!isAfter(sortedTimestamps[i].time, sortedTimestamps[i + 1].time)) {
@@ -83,10 +81,14 @@ class MoonLogic extends Component {
 	};
 	
 	addTimestamp = () => {
+		const zonedDate = new Date();
+		console.log("date1: ", zonedDate.toUTCString());
+		const date = zonedDate.getTime();
+		console.log("date: >>>>>>>>>>>>>>>>>", date);
 		this.setState(produce(draft => {
 				draft.timestamps.push({
 					id: uuidv4(),
-					time: new Date(),
+					time: zonedDate.toUTCString(),
 					distanceToPop: 0
 				})
 			}), () => {
@@ -110,9 +112,19 @@ class MoonLogic extends Component {
 				this.setState(produce(draft => {
 					draft.timeToPop = timeToPop
 				}));
-				this._persist(this.props.moonId, this.state)
+				this._persist(this.props.moonId, this.state);
 				this.validateTimestamps(this.state.timestamps);
 			}
+		)
+	};
+	
+	updateMoonData = (ev) => {
+		ev.persist();
+		console.log("tar: " , ev.target.name, "val", ev.target.value)
+		this.setState(produce(draft => draft[ev.target.name] = ev.target.value
+			, () => {
+				this._persist(this.props.moonId, this.state);
+			})
 		)
 	};
 	
@@ -234,6 +246,8 @@ class MoonLogic extends Component {
 	render() {
 		return <MoonPresent moonName={this.props.moonName}
 		                    moonId={this.props.moonId}
+		                    notes={this.state.notes}
+		                    updateMoonData={this.updateMoonData}
 		                    timestampsFuckedUp={this.state.fuckedUp}
 		                    addTimestamp={this.addTimestamp}
 		                    updateTimestamp={this.updateTimestamp}

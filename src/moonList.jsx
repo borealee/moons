@@ -14,6 +14,8 @@ import ExpandMore from '@material-ui/icons/ExpandMore';
 import ExpandLess from '@material-ui/icons/ExpandLess';
 import Button from "@material-ui/core/Button";
 import TextField from "@material-ui/core/TextField";
+import Divider from "@material-ui/core/Divider";
+import Remove from "@material-ui/icons/Remove";
 
 class MoonList extends Component {
 	constructor(props) {
@@ -97,11 +99,20 @@ class MoonList extends Component {
 	removeMoon = (id) => {
 		this.setState(produce(draft => {
 			draft.moonList = this.state.moonList.filter(moon => moon.id !== id)
-		}),() => this._persist("moonList", this.state.moonList))
+		}), () => this._persist("moonList", this.state.moonList))
 	};
 	
 	_persist = (key, value) => {
 		localStorage.setItem(key, JSON.stringify(value))
+	};
+	
+	minimizeAll = () => {
+		console.log("setting")
+		this.setState(produce(draft => {
+			draft.moonList = this.state.moonList.map(moon => {
+				return {...moon, open: false}
+			})
+		}, () => this._persist("moonList", this.state.moonList)))
 	};
 	
 	render() {
@@ -109,9 +120,16 @@ class MoonList extends Component {
 			<Typography variant="h6">
 				Moons
 			</Typography>
+			{/*<Button onClick={() => this.minimizeAll()}>Minimize all</Button>*/}
+			
+			{/*<IconButton edge="end"*/}
+			{/*            aria-label="delete"*/}
+			{/*            onClick={() => this.minimizeAll()}>*/}
+			{/*	<Remove/>*/}
+			{/*</IconButton>*/}
 			<List>
 				{this.state.moonList.map(moon => {
-					return [<ListItem style={{display: "block"}}>
+					return [<ListItem style={{display: "block", margin: "8px 0 0 0"}}>
 						
 						<TextField
 							value={moon.name}
@@ -126,7 +144,9 @@ class MoonList extends Component {
 						
 						<ListItemSecondaryAction>
 							{/* eslint-disable-next-line react/jsx-no-undef */}
-							<IconButton edge="end" aria-label="delete" onClick={() => this.openMoon(moon.id)}>
+							<IconButton edge="end"
+							            style={{backgroundColor: "#c2c2c2"}}
+							            onClick={() => this.openMoon(moon.id)}>
 								{moon.open ? <ExpandLess/> : <ExpandMore/>}
 							</IconButton>
 						</ListItemSecondaryAction>
@@ -139,11 +159,13 @@ class MoonList extends Component {
 									<MoonLogic moonName={moon.name} moonId={moon.id} moonData={moon.data}/>
 								</ListItem>
 							</List>
-						</Collapse>
+						</Collapse>,
+						<Divider/>
 					
 					]
 				})}
 			</List>
+			<Divider/>
 			<Button onClick={this.addMoon} fullWidth color="primary"> Add
 				moon </Button>
 		</div>

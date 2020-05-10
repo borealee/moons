@@ -15,26 +15,26 @@ import TextField from "@material-ui/core/TextField";
 import Divider from "@material-ui/core/Divider";
 import {DatePicker, DateTimePicker, MuiPickersUtilsProvider} from "@material-ui/pickers";
 import DateFnsUtils from "@date-io/date-fns";
-import {addHours, parseISO} from 'date-fns';
+import {addHours, parseISO, subHours} from 'date-fns';
 
 class MoonPresent extends Component {
 	constructor(props) {
 		super(props);
 		this.date = new Date();
-		console.log("props 111: " , this.props);
+		console.log("props 111: ", this.props);
 	}
 	
 	componentDidUpdate(prevProps, prevState, snapshot) {
-		console.log("curr props: " , this.props)
+		console.log("curr props: ", this.props)
 	}
 	
 	render() {
 		
 		// console.log("Fucked up: " , this.props.timestampsFuckedUp);
-		console.log("popsat: " , this.props.popsAt);
+		console.log("popsat: ", this.props);
 		let popsAt = this.props.popsAt;
 		if (typeof this.props.popsAt == "string") {
-			popsAt=parseISO(popsAt)
+			popsAt = parseISO(popsAt)
 		}
 		
 		const validEstimation = `${addHours(popsAt, this.props.timeToPop).toString()} (± ${this.props.timeToPop} hrs)`
@@ -42,12 +42,23 @@ class MoonPresent extends Component {
 			<Typography variant="h6">
 				Moon pops: {this.props.timestampsFuckedUp ? "Fucked up timestamps" : validEstimation}
 			</Typography>
+			<TextField value={this.props.notes}
+			           fullWidth={true}
+			           style={{marginTop: '16px', marginBottom: '16px'}}
+			           name="notes"
+			           onChange={this.props.updateMoonData}
+			           label="Notes"
+			           rows={4}
+			           variant="outlined"
+			           multiline/>
+			
 			<Typography>
 				Bookmarks
 			</Typography>
-			<Typography>{this.props.timestampsFuckedUp ? "Bro timestamps are fucked" : null}</Typography>
+			<Typography style={{marginTop: '8px', marginBottom: '8px'}}>{this.props.timestampsFuckedUp ? "Bro timestamps are fucked" : null}</Typography>
 			<List dense={true}>
 				{this.props.timestamps.map(timestamp => {
+					console.log("timestamp: >>>>>>>>>", timestamp, "sub hrs: ", subHours(parseISO(timestamp.time), 3))
 					return <ListItem key={timestamp.id} style={{marginTop: "8px"}}>
 						{/*<ListItemAvatar>*/}
 						{/*</ListItemAvatar>*/}
@@ -56,7 +67,6 @@ class MoonPresent extends Component {
 								<DateTimePicker
 									emptyLabel={""}
 									label="Date (use evetime dipshit)"
-									// value={timestamp.time}
 									value={timestamp.time}
 									ampm={false}
 									fullWidth={true}
@@ -81,7 +91,8 @@ class MoonPresent extends Component {
 						{/*/>*/}
 						<ListItemSecondaryAction>
 							{/* eslint-disable-next-line react/jsx-no-undef */}
-							<IconButton edge="end" aria-label="delete"
+							<IconButton edge="end"
+							            aria-label="delete"
 							            onClick={() => this.props.removeTimestamp(timestamp.id)}>
 								<DeleteIcon/>
 							</IconButton>
