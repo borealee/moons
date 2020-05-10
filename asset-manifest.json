@@ -1,14 +1,14 @@
 {
   "files": {
     "main.css": "/moons/static/css/main.d1b05096.chunk.css",
-    "main.js": "/moons/static/js/main.b54532d5.chunk.js",
-    "main.js.map": "/moons/static/js/main.b54532d5.chunk.js.map",
+    "main.js": "/moons/static/js/main.40528938.chunk.js",
+    "main.js.map": "/moons/static/js/main.40528938.chunk.js.map",
     "runtime-main.js": "/moons/static/js/runtime-main.f4c2cb56.js",
     "runtime-main.js.map": "/moons/static/js/runtime-main.f4c2cb56.js.map",
     "static/js/2.464374a2.chunk.js": "/moons/static/js/2.464374a2.chunk.js",
     "static/js/2.464374a2.chunk.js.map": "/moons/static/js/2.464374a2.chunk.js.map",
     "index.html": "/moons/index.html",
-    "precache-manifest.62a1ff3282947558fb41677ec716d5c4.js": "/moons/precache-manifest.62a1ff3282947558fb41677ec716d5c4.js",
+    "precache-manifest.cccc47b96c834f05fb3c6a0aa3213926.js": "/moons/precache-manifest.cccc47b96c834f05fb3c6a0aa3213926.js",
     "service-worker.js": "/moons/service-worker.js",
     "static/css/main.d1b05096.chunk.css.map": "/moons/static/css/main.d1b05096.chunk.css.map",
     "static/js/2.464374a2.chunk.js.LICENSE.txt": "/moons/static/js/2.464374a2.chunk.js.LICENSE.txt",
@@ -18,6 +18,6 @@
     "static/js/runtime-main.f4c2cb56.js",
     "static/js/2.464374a2.chunk.js",
     "static/css/main.d1b05096.chunk.css",
-    "static/js/main.b54532d5.chunk.js"
+    "static/js/main.40528938.chunk.js"
   ]
 }
