@@ -96,6 +96,7 @@ class MoonLogic extends Component {
 				console.log(timeToPop);
 				this.setState(produce(draft => {
 					draft.timeToPop = timeToPop
+					draft.popsAt = new Date();
 				}));
 				this._persist(this.props.moonId, this.state);
 				this.validateTimestamps(this.state.timestamps);
@@ -110,7 +111,8 @@ class MoonLogic extends Component {
 				// console.log("updated: ", id, " time: ", this.state.timestamps.find(ts => ts.id === id).time)
 				const timeToPop = this.calculateTimeToPop(this.state.timestamps);
 				this.setState(produce(draft => {
-					draft.timeToPop = timeToPop
+					draft.timeToPop = timeToPop;
+						draft.popsAt = new Date();
 				}));
 				this._persist(this.props.moonId, this.state);
 				this.validateTimestamps(this.state.timestamps);
@@ -135,7 +137,8 @@ class MoonLogic extends Component {
 			}), () => {
 				const timeToPop = this.calculateTimeToPop(this.state.timestamps);
 				this.setState(produce(draft => {
-					draft.timeToPop = timeToPop
+					draft.timeToPop = timeToPop;
+					draft.popsAt = new Date();
 				}));
 				this._persist(this.props.moonId, this.state)
 				this.validateTimestamps(this.state.timestamps);
@@ -149,7 +152,8 @@ class MoonLogic extends Component {
 		}), () => {
 			const timeToPop = this.calculateTimeToPop(this.state.timestamps);
 			this.setState(produce(draft => {
-				draft.timeToPop = timeToPop
+				draft.timeToPop = timeToPop;
+				draft.popsAt = new Date();
 			}));
 			this._persist(this.props.moonId, this.state)
 			this.validateTimestamps(this.state.timestamps);

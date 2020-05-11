@@ -37,7 +37,11 @@ class MoonPresent extends Component {
 			popsAt = parseISO(popsAt)
 		}
 		
-		const validEstimation = `${addHours(popsAt, this.props.timeToPop).toString()} (± ${this.props.timeToPop} hrs)`
+		const validEstimation = `${addHours(popsAt, this.props.timeToPop).toString()} (± ${this.props.timeToPop} hrs)`;
+		
+		console.log("Before hours: " , popsAt, " after adding: " , addHours(popsAt, this.props.timeToPop).toString(), " added : ", this.props.timeToPop, " props.popsAt: " , this.props.popsAt)
+		
+		console.log("AAAA>>>>", addHours(new Date(), 180));
 		return <div style={{display: "block", padding: "24px", width: "100%"}}>
 			<Typography variant="h6">
 				Moon pops: {this.props.timestampsFuckedUp ? "Fucked up timestamps" : validEstimation}
