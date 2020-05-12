@@ -1,10 +1,10 @@
 import React, {Component} from 'react';
 import MoonPresent from "./moonPresent";
 import produce from "immer";
-import {differenceInHours, max, parseISO, isAfter, isBefore} from 'date-fns';
+import {differenceInHours, max, parseISO, isAfter, isBefore, isEqual, parse} from 'date-fns';
 import {v4 as uuidv4} from 'uuid';
 // import { zonedTimeToUtc, utcToZonedTime, format } from 'date-fns-timezone';
-import {zonedTimeToUtc} from 'date-fns-timezone';
+import {maxTimestamp} from "./utils";
 
 class MoonLogic extends Component {
 	constructor(props) {
@@ -65,9 +65,6 @@ class MoonLogic extends Component {
 		})].sort(compare);
 		
 		for (let i = 0; i < sortedTimestamps.length - 1; i++) {
-			console.log("sort: ", sortedTimestamps[i + 1], i + 1)
-			console.log("isAfter: ", isAfter(sortedTimestamps[i].time, sortedTimestamps[i + 1].time), sortedTimestamps[i].time, sortedTimestamps[i + 1].time);
-			console.log("isBefore: ", isBefore(sortedTimestamps[i].time, sortedTimestamps[i + 1].time), sortedTimestamps[i].time, sortedTimestamps[i + 1].time)
 			if (!isAfter(sortedTimestamps[i].time, sortedTimestamps[i + 1].time)) {
 				fuckedUp = true;
 			}
@@ -82,21 +79,22 @@ class MoonLogic extends Component {
 	
 	addTimestamp = () => {
 		const zonedDate = new Date();
-		console.log("date1: ", zonedDate.toUTCString());
-		const date = zonedDate.getTime();
-		console.log("date: >>>>>>>>>>>>>>>>>", date);
+		console.log("date1: ", zonedDate.toISOString());
+
 		this.setState(produce(draft => {
 				draft.timestamps.push({
 					id: uuidv4(),
-					time: zonedDate.toUTCString(),
+					time: zonedDate.toISOString(),
 					distanceToPop: 0
 				})
 			}), () => {
 				const timeToPop = this.calculateTimeToPop(this.state.timestamps);
-				console.log(timeToPop);
+				console.log("timeToPop", timeToPop);
+				const length = this.state.timestamps.length;
 				this.setState(produce(draft => {
 					draft.timeToPop = timeToPop
 					draft.popsAt = new Date();
+					// draft.timestamps[length-1].time = parseISO(this.state.timestamps[length-1].time)
 				}));
 				this._persist(this.props.moonId, this.state);
 				this.validateTimestamps(this.state.timestamps);
@@ -105,14 +103,15 @@ class MoonLogic extends Component {
 	};
 	
 	updateTimstampDate = (id, newDate) => {
+		console.log("newDate: " , newDate)
 		this.setState(produce(draft => {
-				draft.timestamps.find(ts => ts.id === id).time = newDate;
+				draft.timestamps.find(ts => ts.id === id).time = newDate.toISOString();
 			}), () => {
 				// console.log("updated: ", id, " time: ", this.state.timestamps.find(ts => ts.id === id).time)
 				const timeToPop = this.calculateTimeToPop(this.state.timestamps);
 				this.setState(produce(draft => {
 					draft.timeToPop = timeToPop;
-						draft.popsAt = new Date();
+					draft.popsAt = new Date();
 				}));
 				this._persist(this.props.moonId, this.state);
 				this.validateTimestamps(this.state.timestamps);
@@ -122,7 +121,7 @@ class MoonLogic extends Component {
 	
 	updateMoonData = (ev) => {
 		ev.persist();
-		console.log("tar: " , ev.target.name, "val", ev.target.value)
+		console.log("tar: ", ev.target.name, "val", ev.target.value)
 		this.setState(produce(draft => draft[ev.target.name] = ev.target.value
 			, () => {
 				this._persist(this.props.moonId, this.state);
@@ -161,7 +160,6 @@ class MoonLogic extends Component {
 	};
 	
 	calculateSpeed = (timestamp1, timestamp2) => {
-		
 		let formattedDate1 = timestamp1.time;
 		let formattedDate2 = timestamp2.time;
 		
@@ -172,20 +170,6 @@ class MoonLogic extends Component {
 		if (typeof formattedDate2 == "string") {
 			formattedDate2 = parseISO(timestamp2.time)
 		}
-		
-		// try {
-		// 	formattedDate1 = parseISO(timestamp1.time)
-		// } catch (e) {
-		// 	console.error("failed to format date 1: ", timestamp1)
-		// }
-		//
-		// try {
-		// 	formattedDate2 = parseISO(timestamp2.time)
-		// } catch (e) {
-		// 	console.error("failed to format date 2: " , timestamp2)
-		// }
-		
-		
 		const hourDifference = differenceInHours(formattedDate1, formattedDate2);
 		const distance = Math.abs(timestamp1.distanceToPop - timestamp2.distanceToPop);
 		const speed = distance / Math.abs(hourDifference);
@@ -206,33 +190,47 @@ class MoonLogic extends Component {
 		}))
 	};
 	
+	// _maxTimestamp = (timestamps) => {
+	// 	const times = timestamps.map(ts => parseISO(ts.time));
+	// 	return max(times);
+	// };
+	
 	calculateTimeToPop = (timestamps) => {
-		const times = timestamps.map(ts => parseISO(ts.time));
-		const maxTimestamp = max(times);
+		console.log("timestamps: " , timestamps);
+		const maxTstp = maxTimestamp(timestamps);
+		const maxIndex = timestamps.findIndex(ts => {
+			if (typeof ts.time == "string") {
+				console.log("tstime: " , parseISO(ts.time), " max: " , maxTstp)
+				return isEqual(parseISO(ts.time), maxTstp)
+			}
+			return isEqual(parseISO(ts.time), maxTstp)
+		});
+		
+		console.log("maxIndex: " , maxIndex);
 		const speeds = [];
 		let timeToPop = 0;
 		
 		console.log("length:", timestamps.length)
-		console.log("lll: ", times);
+		// console.log("lll: ", times);
 		
 		if (timestamps.length >= 2) {
 			for (let i = 0; i < timestamps.length - 1; i++) {
-				console.log("speed1: ", timestamps[i], timestamps[i + 1])
+				// console.log("speed1: ", timestamps[i], timestamps[i + 1])
 				speeds.push(this.calculateSpeed(timestamps[i], timestamps[i + 1]))
 			}
 			
 			console.log("speeds: ", speeds)
 			const avgSpeed = speeds.reduce((curr, acc) => curr + acc) / (timestamps.length - 1);
-			console.log("avg speed: ", avgSpeed, "max timestmp: ", maxTimestamp.toString());
+			// console.log("avg speed: ", avgSpeed, "max timestmp: ", maxTstp.toString());
 			
-			const biggestTimestamp = timestamps.find(ts => {
-				console.log("ts time: ", ts.time, maxTimestamp.toString())
-				return parseISO(ts.time) == maxTimestamp.toString()
-			})
+			// const biggestTimestamp = timestamps.find(ts => {
+			// 	// console.log("ts time: ", ts.time, maxTstp.toString())
+			// 	return parseISO(ts.time) == maxTstp.toString()
+			// })
 			
-			console.log("biggest: ", biggestTimestamp)
+			// console.log("biggest: ", timestamps.find(ts=> ts.time === maxTstp))
 			
-			timeToPop = biggestTimestamp.distanceToPop / avgSpeed;
+			timeToPop = timestamps[maxIndex].distanceToPop / avgSpeed;
 		}
 		
 		console.log("time to pop: ", timeToPop)
