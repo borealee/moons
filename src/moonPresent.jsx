@@ -15,33 +15,23 @@ import TextField from "@material-ui/core/TextField";
 import Divider from "@material-ui/core/Divider";
 import {DatePicker, DateTimePicker, MuiPickersUtilsProvider} from "@material-ui/pickers";
 import DateFnsUtils from "@date-io/date-fns";
-import {addHours, parseISO, subHours} from 'date-fns';
+import {addHours, parseISO, subHours, differenceInHours} from 'date-fns';
 import {maxTimestamp} from "./utils";
 
 class MoonPresent extends Component {
 	constructor(props) {
 		super(props);
-		this.date = new Date();
-		this.maxTstp = maxTimestamp(this.props.timestamps);
 	}
 	
 	componentDidUpdate(prevProps, prevState, snapshot) {
 		// console.log("curr props: ", this.props)
-		this.maxTstp = maxTimestamp(this.props.timestamps);
 	}
 	
 	render() {
-		
-		// console.log("Fucked up: " , this.props.timestampsFuckedUp);
-		// console.log("popsat: ", this.props);
-		let popsAt = this.props.popsAt;
-		if (typeof this.props.popsAt == "string") {
-			popsAt = parseISO(popsAt)
-		}
-		console.log("timestamps: " , this.props.timestamps);
-		console.log("parse: " , this.props.timestamps[0].time, " parsed: " , parseISO((new Date()).toISOString()))
-		console.log("max tmstp: " , this.maxTstp)
-		const validEstimation = `${addHours(this.maxTstp, this.props.timeToPop).toString()} (± ${this.props.timeToPop} hrs)`;
+		const date = new Date();
+		const popTime = addHours(maxTimestamp(this.props.timestamps), this.props.timeToPop);
+		const diff = differenceInHours(popTime, parseISO(date.toISOString()))
+		const validEstimation = `${popTime.toString()} (in ±${diff} hrs)`;
 		
 		// console.log("Before hours: " , popsAt, " after adding: " , addHours(popsAt, this.props.timeToPop).toString(), " added : ", this.props.timeToPop, " props.popsAt: " , this.props.popsAt)
 		

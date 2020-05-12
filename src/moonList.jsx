@@ -129,40 +129,41 @@ class MoonList extends Component {
 			{/*</IconButton>*/}
 			<List>
 				{this.state.moonList.map(moon => {
-					return [<ListItem style={{display: "block", margin: "8px 0 0 0"}}>
+					return <React.Fragment key={moon.id}>
+						<ListItem style={{display: "block", margin: "8px 0 0 0"}}>
+							
+							<TextField
+								value={moon.name}
+								name={"name"}
+								onChange={(ev) => this.updateMoon(moon.id, ev)}
+							/>
+							<Button onClick={(ev) => this.removeMoon(moon.id)}>DELETE</Button>
+							{/*<ListItemText*/}
+							{/*	primary={moon.name}*/}
+							{/*	secondary={'Pops in: // TODO'}*/}
+							{/*/>*/}
+							
+							<ListItemSecondaryAction>
+								{/* eslint-disable-next-line react/jsx-no-undef */}
+								<IconButton edge="end"
+								            style={{backgroundColor: "#c2c2c2"}}
+								            onClick={() => this.openMoon(moon.id)}>
+									{moon.open ? <ExpandLess/> : <ExpandMore/>}
+								</IconButton>
+							</ListItemSecondaryAction>
 						
-						<TextField
-							value={moon.name}
-							name={"name"}
-							onChange={(ev) => this.updateMoon(moon.id, ev)}
-						/>
-						<Button onClick={(ev) => this.removeMoon(moon.id)}>DELETE</Button>
-						{/*<ListItemText*/}
-						{/*	primary={moon.name}*/}
-						{/*	secondary={'Pops in: // TODO'}*/}
-						{/*/>*/}
 						
-						<ListItemSecondaryAction>
-							{/* eslint-disable-next-line react/jsx-no-undef */}
-							<IconButton edge="end"
-							            style={{backgroundColor: "#c2c2c2"}}
-							            onClick={() => this.openMoon(moon.id)}>
-								{moon.open ? <ExpandLess/> : <ExpandMore/>}
-							</IconButton>
-						</ListItemSecondaryAction>
-					
-					
-					</ListItem>,
+						</ListItem>
 						<Collapse in={moon.open} timeout="auto" unmountOnExit>
 							<List component="div">
 								<ListItem>
 									<MoonLogic moonName={moon.name} moonId={moon.id} moonData={moon.data}/>
 								</ListItem>
 							</List>
-						</Collapse>,
+						</Collapse>
 						<Divider/>
-					
-					]
+						
+					</React.Fragment>
 				})}
 			</List>
 			<Divider/>
