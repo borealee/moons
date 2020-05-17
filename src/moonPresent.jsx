@@ -15,8 +15,9 @@ import TextField from "@material-ui/core/TextField";
 import Divider from "@material-ui/core/Divider";
 import {DatePicker, DateTimePicker, MuiPickersUtilsProvider} from "@material-ui/pickers";
 import DateFnsUtils from "@date-io/date-fns";
-import {addHours, parseISO, subHours, differenceInHours} from 'date-fns';
+import {addHours, parseISO, subHours, differenceInHours,format, addMinutes} from 'date-fns';
 import {maxTimestamp} from "./utils";
+import {parseFromTimeZone} from "date-fns-timezone";
 
 class MoonPresent extends Component {
 	constructor(props) {
@@ -29,13 +30,17 @@ class MoonPresent extends Component {
 	
 	render() {
 		const date = new Date();
-		const popTime = addHours(maxTimestamp(this.props.timestamps), this.props.timeToPop);
-		const diff = differenceInHours(popTime, parseISO(date.toISOString()))
-		const validEstimation = `${popTime.toString()} (in ±${diff} hrs)`;
+		let popTime = 0;
+		let diff = 0;
+		let validEstimation = "Invalid timestamps";
 		
-		// console.log("Before hours: " , popsAt, " after adding: " , addHours(popsAt, this.props.timeToPop).toString(), " added : ", this.props.timeToPop, " props.popsAt: " , this.props.popsAt)
+		if (this.props.timestamps.length > 0) {
+			popTime = addHours(maxTimestamp(this.props.timestamps), this.props.timeToPop);
+			diff = differenceInHours(popTime, parseISO(date.toISOString()))
+			
+			validEstimation = `${format(addMinutes(popTime, popTime.getTimezoneOffset()), 'yyyy-MM-dd HH:mm')} (in ±${diff} hrs)`;
+		}
 		
-		// console.log("AAAA>>>>", addHours(new Date(), 180));
 		return <div style={{display: "block", padding: "24px", width: "100%"}}>
 			<Typography variant="h6">
 				Moon pops: {this.props.timestampsFuckedUp ? "Fucked up timestamps" : validEstimation}
@@ -50,9 +55,11 @@ class MoonPresent extends Component {
 			           variant="outlined"
 			           multiline/>
 			
-			<Typography>
+			<Typography style={{display: 'inline'}}>
 				Bookmarks
 			</Typography>
+			
+			<Button onClick={this.props.clearAllBookmarks} style={{float: 'right', display: 'inline'}}>Clear all</Button>
 			<Typography style={{marginTop: '8px', marginBottom: '8px'}}>{this.props.timestampsFuckedUp ? "Bro timestamps are fucked" : null}</Typography>
 			<List dense={true}>
 				{this.props.timestamps.map(timestamp => {
@@ -83,10 +90,6 @@ class MoonPresent extends Component {
 						           helperText={isNaN(timestamp.distanceToPop) ? "Are you fucking retarded?" : null}
 						           value={timestamp.distanceToPop}
 						           onChange={(ev) => this.props.updateTimestamp(timestamp.id, ev)}/>
-						{/*<ListItemText*/}
-						{/*	primary={timestamp.time.toString()}*/}
-						{/*	secondary={'Secondary text'}*/}
-						{/*/>*/}
 						<ListItemSecondaryAction>
 							{/* eslint-disable-next-line react/jsx-no-undef */}
 							<IconButton edge="end"
@@ -99,7 +102,11 @@ class MoonPresent extends Component {
 				})}
 			</List>
 			<Divider/>
-			<Button onClick={this.props.addTimestamp} style={{marginTop: "8px"}}>Add bookmark</Button>
+			<Button onClick={this.props.addTimestamp}
+			        style={{marginTop: "8px"}}
+			        disableElevation
+			        variant="contained"
+			        color="primary">Add bookmark</Button>
 		</div>
 	}
 }

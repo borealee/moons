@@ -1,14 +1,17 @@
 import React, {Component} from 'react';
 import MoonPresent from "./moonPresent";
 import produce from "immer";
-import {differenceInHours, max, parseISO, isAfter, isBefore, isEqual, parse} from 'date-fns';
+import {differenceInHours, max, parseISO, isAfter, isBefore, isEqual, parse, addHours, addMinutes} from 'date-fns';
 import {v4 as uuidv4} from 'uuid';
 // import { zonedTimeToUtc, utcToZonedTime, format } from 'date-fns-timezone';
 import {maxTimestamp} from "./utils";
+import {persist} from "./utils";
 
 class MoonLogic extends Component {
 	constructor(props) {
 		super(props);
+		const zonedDate = new Date();
+		const utcDate = addMinutes(zonedDate, zonedDate.getTimezoneOffset());
 		this.state = {
 			chunkToPopDistance: 0,
 			chunkSpeed: 0,
@@ -17,12 +20,13 @@ class MoonLogic extends Component {
 			popDistance: 200,
 			fuckedUp: false,
 			notes: '',
+			
 			timestamps: [
-				{
-					id: 0,
-					time: new Date(),
-					distanceToPop: 200
-				}
+				// {
+				// 	id: 0,
+				// 	time: utcDate,
+				// 	distanceToPop: 0
+				// }
 			],
 		}
 	}
@@ -44,7 +48,6 @@ class MoonLogic extends Component {
 	
 	validateTimestamps = (timestamps) => {
 		let fuckedUp = false;
-		let sortedTimestamps = [];
 		
 		function compare(a, b) {
 			if (a.distanceToPop < b.distanceToPop) {
@@ -56,7 +59,7 @@ class MoonLogic extends Component {
 			return 0;
 		}
 		
-		sortedTimestamps = [...timestamps.map(ts => {
+		let sortedTimestamps = [...timestamps.map(ts => {
 			if (typeof ts.time == "string") {
 				return {...ts, time: parseISO(ts.time), distanceToPop: parseInt(ts.distanceToPop, 10)}
 			} else {
@@ -72,38 +75,37 @@ class MoonLogic extends Component {
 		
 		this.setState(draft => {
 			draft.fuckedUp = fuckedUp;
-		}, () => this._persist(this.props.moonId, this.state))
+		}, () => persist(this.props.moonId, this.state))
 		
 		console.log("sorted: ", sortedTimestamps);
 	};
 	
 	addTimestamp = () => {
 		const zonedDate = new Date();
-		console.log("date1: ", zonedDate.toISOString());
-
+		const utcDate = addMinutes(zonedDate, zonedDate.getTimezoneOffset());
+		
 		this.setState(produce(draft => {
 				draft.timestamps.push({
 					id: uuidv4(),
-					time: zonedDate.toISOString(),
+					time: utcDate.toISOString(),
 					distanceToPop: 0
 				})
 			}), () => {
 				const timeToPop = this.calculateTimeToPop(this.state.timestamps);
-				console.log("timeToPop", timeToPop);
-				const length = this.state.timestamps.length;
 				this.setState(produce(draft => {
-					draft.timeToPop = timeToPop
+					draft.timeToPop = timeToPop;
 					draft.popsAt = new Date();
 					// draft.timestamps[length-1].time = parseISO(this.state.timestamps[length-1].time)
 				}));
-				this._persist(this.props.moonId, this.state);
+				const popsAt = addHours(maxTimestamp(this.state.timestamps), timeToPop);
+				this._updateParentEstimate(popsAt);
+				persist(this.props.moonId, this.state);
 				this.validateTimestamps(this.state.timestamps);
 			}
 		)
 	};
 	
 	updateTimstampDate = (id, newDate) => {
-		console.log("newDate: " , newDate)
 		this.setState(produce(draft => {
 				draft.timestamps.find(ts => ts.id === id).time = newDate.toISOString();
 			}), () => {
@@ -113,18 +115,32 @@ class MoonLogic extends Component {
 					draft.timeToPop = timeToPop;
 					draft.popsAt = new Date();
 				}));
-				this._persist(this.props.moonId, this.state);
+				
+				const popsAt = addHours(maxTimestamp(this.state.timestamps), timeToPop);
+				this._updateParentEstimate(popsAt);
+				persist(this.props.moonId, this.state);
 				this.validateTimestamps(this.state.timestamps);
 			}
 		)
 	};
 	
+	_updateParentEstimate = (popsAt) => {
+		this.props.updateMoonParent(this.props.moonId, {
+			persist: () => {
+			},
+			target: {
+				name: 'popsAt',
+				value: popsAt
+			}
+		});
+	};
+	
 	updateMoonData = (ev) => {
 		ev.persist();
-		console.log("tar: ", ev.target.name, "val", ev.target.value)
+		// console.log("tar: ", ev.target.name, "val", ev.target.value)
 		this.setState(produce(draft => draft[ev.target.name] = ev.target.value
 			, () => {
-				this._persist(this.props.moonId, this.state);
+				persist(this.props.moonId, this.state);
 			})
 		)
 	};
@@ -139,7 +155,11 @@ class MoonLogic extends Component {
 					draft.timeToPop = timeToPop;
 					draft.popsAt = new Date();
 				}));
-				this._persist(this.props.moonId, this.state)
+				persist(this.props.moonId, this.state);
+			
+			const popsAt = addHours(maxTimestamp(this.state.timestamps), timeToPop);
+			this._updateParentEstimate(popsAt);
+				
 				this.validateTimestamps(this.state.timestamps);
 			}
 		)
@@ -154,8 +174,25 @@ class MoonLogic extends Component {
 				draft.timeToPop = timeToPop;
 				draft.popsAt = new Date();
 			}));
-			this._persist(this.props.moonId, this.state)
+			persist(this.props.moonId, this.state);
+			const popsAt = addHours(maxTimestamp(this.state.timestamps), timeToPop);
+			this._updateParentEstimate(popsAt);
 			this.validateTimestamps(this.state.timestamps);
+		})
+	};
+	clearAllBookmarks = () => {
+		this.setState(produce(draft => {
+			draft.timestamps = []
+		}), () => {
+			const timeToPop = 0;
+			this.setState(produce(draft => {
+				draft.timeToPop = 0;
+				draft.popsAt = new Date();
+			}));
+			persist(this.props.moonId, this.state);
+			const popsAt = 0;
+			this._updateParentEstimate(new Date());
+			// this.validateTimestamps(this.state.timestamps);
 		})
 	};
 	
@@ -178,39 +215,25 @@ class MoonLogic extends Component {
 		return speed;
 	};
 	
-	updateChunkSpeed = (newSpeed) => {
-		this.setState(produce(draft => {
-			draft.chunkSpeed = newSpeed
-		}))
-	};
-	
-	updatePopDistance = (popDistance) => {
-		this.setState(produce(draft => {
-			draft.popDistance = popDistance
-		}))
-	};
-	
-	// _maxTimestamp = (timestamps) => {
-	// 	const times = timestamps.map(ts => parseISO(ts.time));
-	// 	return max(times);
-	// };
-	
 	calculateTimeToPop = (timestamps) => {
-		console.log("timestamps: " , timestamps);
+		if (timestamps.length == 0) {
+			return 0
+		}
+		// console.log("timestamps: ", timestamps);
 		const maxTstp = maxTimestamp(timestamps);
 		const maxIndex = timestamps.findIndex(ts => {
 			if (typeof ts.time == "string") {
-				console.log("tstime: " , parseISO(ts.time), " max: " , maxTstp)
+				// console.log("tstime: ", parseISO(ts.time), " max: ", maxTstp)
 				return isEqual(parseISO(ts.time), maxTstp)
 			}
 			return isEqual(parseISO(ts.time), maxTstp)
 		});
 		
-		console.log("maxIndex: " , maxIndex);
+		// console.log("maxIndex: ", maxIndex);
 		const speeds = [];
 		let timeToPop = 0;
 		
-		console.log("length:", timestamps.length)
+		// console.log("length:", timestamps.length)
 		// console.log("lll: ", times);
 		
 		if (timestamps.length >= 2) {
@@ -219,30 +242,17 @@ class MoonLogic extends Component {
 				speeds.push(this.calculateSpeed(timestamps[i], timestamps[i + 1]))
 			}
 			
-			console.log("speeds: ", speeds)
+			// console.log("speeds: ", speeds)
 			const avgSpeed = speeds.reduce((curr, acc) => curr + acc) / (timestamps.length - 1);
-			// console.log("avg speed: ", avgSpeed, "max timestmp: ", maxTstp.toString());
-			
-			// const biggestTimestamp = timestamps.find(ts => {
-			// 	// console.log("ts time: ", ts.time, maxTstp.toString())
-			// 	return parseISO(ts.time) == maxTstp.toString()
-			// })
-			
-			// console.log("biggest: ", timestamps.find(ts=> ts.time === maxTstp))
-			
 			timeToPop = timestamps[maxIndex].distanceToPop / avgSpeed;
 		}
 		
-		console.log("time to pop: ", timeToPop)
+		// console.log("time to pop: ", timeToPop)
 		if (isNaN(timeToPop)) {
 			return 0
 		} else {
 			return timeToPop.toString().match(/^-?\d+(?:\.\d{0,2})?/)[0];
 		}
-	};
-	
-	_persist = (key, value) => {
-		localStorage.setItem(key, JSON.stringify(value))
 	};
 	
 	render() {
@@ -255,6 +265,7 @@ class MoonLogic extends Component {
 		                    updateTimestamp={this.updateTimestamp}
 		                    updateTimstampDate={this.updateTimstampDate}
 		                    removeTimestamp={this.removeTimestamp}
+		                    clearAllBookmarks={this.clearAllBookmarks}
 		                    chunkSpeed={this.state.chunkSpeed}
 		                    popsAt={this.state.popsAt}
 		                    timeToPop={this.state.timeToPop}

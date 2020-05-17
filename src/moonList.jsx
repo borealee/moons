@@ -15,7 +15,8 @@ import ExpandLess from '@material-ui/icons/ExpandLess';
 import Button from "@material-ui/core/Button";
 import TextField from "@material-ui/core/TextField";
 import Divider from "@material-ui/core/Divider";
-import Remove from "@material-ui/icons/Remove";
+import {persist} from "./utils";
+import {addMinutes, format} from "date-fns";
 
 class MoonList extends Component {
 	constructor(props) {
@@ -61,7 +62,6 @@ class MoonList extends Component {
 	}
 	
 	componentDidMount() {
-		// read cookie data
 		const moons = JSON.parse(localStorage.getItem("moonList"));
 		if (moons !== null) {
 			this.setState(produce(draft => {
@@ -77,7 +77,7 @@ class MoonList extends Component {
 	openMoon = (id) => {
 		this.setState(produce(draft => {
 			draft.moonList.find(moon => moon.id === id).open = !this.state.moonList.find(moon2 => moon2.id === id).open;
-		}), () => this._persist("moonList", this.state.moonList))
+		}), () => persist("moonList", this.state.moonList))
 	};
 	
 	addMoon = () => {
@@ -86,24 +86,27 @@ class MoonList extends Component {
 				id: uuidv4(),
 				name: "New moon"
 			})
-		}), () => this._persist("moonList", this.state.moonList))
+		}), () => persist("moonList", this.state.moonList))
 	};
 	
 	updateMoon = (id, ev) => {
 		ev.persist();
+		console.log("updating moon: ", ev);
 		this.setState(produce(draft => {
-			draft.moonList.find(moon => moon.id === id)[ev.target.name] = ev.target.value
-		}), () => this._persist("moonList", this.state.moonList))
+			if (ev.target.name == "popsAt") {
+				
+				draft.moonList.find(moon => moon.id === id)[ev.target.name] = format(addMinutes(ev.target.value, ev.target.value.getTimezoneOffset()), 'yyyy-MM-dd HH:mm')
+			} else {
+				draft.moonList.find(moon => moon.id === id)[ev.target.name] = ev.target.value
+			}
+
+		}), () => persist("moonList", this.state.moonList))
 	};
 	
 	removeMoon = (id) => {
 		this.setState(produce(draft => {
 			draft.moonList = this.state.moonList.filter(moon => moon.id !== id)
-		}), () => this._persist("moonList", this.state.moonList))
-	};
-	
-	_persist = (key, value) => {
-		localStorage.setItem(key, JSON.stringify(value))
+		}), () => persist("moonList", this.state.moonList))
 	};
 	
 	minimizeAll = () => {
@@ -112,11 +115,11 @@ class MoonList extends Component {
 			draft.moonList = this.state.moonList.map(moon => {
 				return {...moon, open: false}
 			})
-		}, () => this._persist("moonList", this.state.moonList)))
+		}, () => persist("moonList", this.state.moonList)))
 	};
 	
 	render() {
-		return <div>
+		return <div style={{paddingRight: 16}}>
 			<Typography variant="h6">
 				Moons
 			</Typography>
@@ -129,6 +132,8 @@ class MoonList extends Component {
 			{/*</IconButton>*/}
 			<List>
 				{this.state.moonList.map(moon => {
+					console.log("Moon: " , moon);
+					// const moonPopTime = format(addMinutes(moon.popsAt, moon.popsAt.getTimezoneOffset()), 'yyyy-MM-dd HH:mm');
 					return <React.Fragment key={moon.id}>
 						<ListItem style={{display: "block", margin: "8px 0 0 0"}}>
 							
@@ -137,16 +142,21 @@ class MoonList extends Component {
 								name={"name"}
 								onChange={(ev) => this.updateMoon(moon.id, ev)}
 							/>
-							<Button onClick={(ev) => this.removeMoon(moon.id)}>DELETE</Button>
+							<Button variant="contained"
+							        color="secondary"
+							        disableElevation
+							        style={{marginLeft: 16}}
+							        onClick={(ev) => this.removeMoon(moon.id)}>DELETE</Button>
 							{/*<ListItemText*/}
 							{/*	primary={moon.name}*/}
 							{/*	secondary={'Pops in: // TODO'}*/}
 							{/*/>*/}
 							
+							<Typography style={{display: 'inline', marginLeft: 16}}>Pops: {moon.popsAt}</Typography>
 							<ListItemSecondaryAction>
 								{/* eslint-disable-next-line react/jsx-no-undef */}
 								<IconButton edge="end"
-								            style={{backgroundColor: "#c2c2c2"}}
+								            // style={{backgroundColor: "#c2c2c2"}}
 								            onClick={() => this.openMoon(moon.id)}>
 									{moon.open ? <ExpandLess/> : <ExpandMore/>}
 								</IconButton>
@@ -157,7 +167,10 @@ class MoonList extends Component {
 						<Collapse in={moon.open} timeout="auto" unmountOnExit>
 							<List component="div">
 								<ListItem>
-									<MoonLogic moonName={moon.name} moonId={moon.id} moonData={moon.data}/>
+									<MoonLogic moonName={moon.name}
+									           moonId={moon.id}
+									           updateMoonParent={this.updateMoon}
+									           moonData={moon.data}/>
 								</ListItem>
 							</List>
 						</Collapse>
@@ -166,8 +179,10 @@ class MoonList extends Component {
 					</React.Fragment>
 				})}
 			</List>
-			<Divider/>
-			<Button onClick={this.addMoon} fullWidth color="primary"> Add
+			<Button onClick={this.addMoon}
+			        variant="outlined"
+			        style={{marginTop: 16}}
+			        fullWidth color="primary"> Add
 				moon </Button>
 		</div>
 	}

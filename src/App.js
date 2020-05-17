@@ -5,6 +5,7 @@ import Button from "@material-ui/core/Button";
 import MoonLogic from "./moonLogic";
 import MoonList from "./moonList";
 import Grid from "@material-ui/core/Grid";
+import Help from "./help"
 
 class App extends React.Component {
     render() {
@@ -32,7 +33,7 @@ class App extends React.Component {
                     <MoonList/>
                         </Grid>
                         <Grid item xs={6}>
-                            Help
+                            <Help/>
                         </Grid>
                     </Grid>
                 </div>
